@@ -203,22 +203,18 @@ test_dataset = CustomMedDataset(test_data_list, mask_dir, transform=transform, p
 train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, collate_fn=collate_fn, drop_last=True)
 test_dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False, collate_fn=collate_fn, drop_last=True)
 
-# 构建MedCLIP模型
+
 model = MedCLIPModel(vision_cls=MedCLIPVisionModel)
 model.cuda()
-# state_dict=torch.load(r'/home/useryf/MC_ACA/checkpoints_resnet_256/pytorch_model.bin')
-# model.load_state_dict(state_dict=state_dict)
-# print('模型加载成功')
 
-# 构建损失模型
+
 loss_model = ImageTextContrastiveLoss(model)
 loss_model.cuda()
 
-# 训练配置
 train_config = {
     'batch_size':64,
     'num_epochs': 25,
-    'warmup': 0.1,  # 前10%的训练步骤用于热身
+    'warmup': 0.1,  
     'lr': 2e-5,
     'weight_decay': 1e-4,
     'eval_batch_size': 16,
@@ -226,7 +222,6 @@ train_config = {
     'save_steps': 100,
 }
 
-# 构建评估器
 medclip_clf = PromptClassifier(model)
 evaluator = Evaluator(
     medclip_clf=medclip_clf,
@@ -234,15 +229,12 @@ evaluator = Evaluator(
     mode='multiclass',
 )
 
-# 训练目标
 train_objectives = [
     (train_dataloader, loss_model, 1),
 ]
 
-# 模型保存路径
 model_save_path = f'./checkpoints/vision_text_pretrain'
 
-# 训练器
 trainer = Trainer()
 trainer.train(
     model,
@@ -292,4 +284,5 @@ print(f"ACC: {acc:.4f}")
 print(f"SEN: {sen:.4f}")
 print(f"PR: {pr:.4f}")
 print(f"AUC: {auc:.4f}")
+
 print(f"F1: {f1:.4f}")
