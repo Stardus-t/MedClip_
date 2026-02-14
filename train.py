@@ -160,7 +160,7 @@ def collate_fn(batch):
     input_ids = torch.stack([item['input_ids'] for item in batch], dim=0)
     attention_mask = torch.stack([item['attention_mask'] for item in batch], dim=0)
     labels = torch.stack([item['labels'] for item in batch], dim=0)
-    prompt_inputs = batch[0]['prompt_inputs']  # 假设所有样本的prompt_inputs相同
+    prompt_inputs = batch[0]['prompt_inputs']  
     return {
         'pixel_values': pixel_values,
         'text': [item['text'] for item in batch],
@@ -181,7 +181,6 @@ image_text_dict_list = build_image_text_dict_list(mask_dir)
 train_size = int(0.8 * len(image_text_dict_list))
 train_data_list, test_data_list = image_text_dict_list[:train_size], image_text_dict_list[train_size:]
 
-# 生成并处理prompt_inputs
 cls_prompts = generate_class_prompts(pd.DataFrame({
     'Reports': [
         'SL visible, TM visible, SS visible, and CBB partially visible, with a low probability of ACA closure.',
@@ -204,14 +203,12 @@ test_dataset = CustomMedDataset(test_data_list, mask_dir, transform=transform, p
 train_dataloader = DataLoader(train_dataset, batch_size=16, shuffle=True, collate_fn=collate_fn, drop_last=True)
 test_dataloader = DataLoader(test_dataset, batch_size=16, shuffle=False, collate_fn=collate_fn, drop_last=True)
 
-# 构建MedCLIP模型
 model = MedCLIPModel(vision_cls=MedCLIPVisionModel)
 model.cuda()
 # state_dict=torch.load(r'/home/useryf/MC_ACA/checkpoints_resnet_256/pytorch_model.bin')
 # model.load_state_dict(state_dict=state_dict)
 # print('模型加载成功')
 
-# 构建损失模型
 loss_model = ImageTextContrastiveLoss(model)
 loss_model.cuda()
 
@@ -219,7 +216,7 @@ loss_model.cuda()
 train_config = {
     'batch_size': 16,
     'num_epochs': 10,
-    'warmup': 0.1,  # 前10%的训练步骤用于热身
+    'warmup': 0.1,  
     'lr': 2e-5,
     'weight_decay': 1e-4,
     'eval_batch_size': 16,
@@ -235,15 +232,12 @@ evaluator = Evaluator(
     mode='multiclass',
 )
 
-# 训练目标
 train_objectives = [
     (train_dataloader, loss_model, 1),
 ]
 
-# 模型保存路径
 model_save_path = f'./checkpoints/vision_text_pretrain'
 
-# 训练器
 trainer = Trainer()
 trainer.train(
     model,
@@ -259,5 +253,6 @@ trainer.train(
     eval_dataloader=test_dataloader,
     use_amp=True,
 )
+
 
 print('训练完成')
